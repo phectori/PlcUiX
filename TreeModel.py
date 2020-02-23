@@ -7,7 +7,7 @@ class TreeModel(QAbstractItemModel):
     def __init__(self, parent=None):
         super(TreeModel, self).__init__(parent)
 
-        self.rootItem = TreeItem(("Name", "Type", "Size", "Comment"))
+        self.rootItem = TreeItem(("Name", "Path", "Type", "Size", "Comment"))
 
     def columnCount(self, parent=None, *args, **kwargs):
         if parent.isValid():
@@ -99,7 +99,7 @@ class TreeModel(QAbstractItemModel):
             )
 
             if len(filtered) == 0:
-                node = TreeItem((items[0], "", "", "", ""), parent)
+                node = TreeItem((items[0], "", "", "", "", ""), parent)
                 parent.append_child(node)
             else:
                 node = filtered[0]
@@ -108,5 +108,14 @@ class TreeModel(QAbstractItemModel):
         elif len(items) == 1:
             name = items[0]
             parent.append_child(
-                TreeItem((name, ads_entry.typename, ads_entry.datatype_size, ads_entry.comment), parent)
+                TreeItem(
+                    (
+                        name,
+                        ads_entry.name,
+                        ads_entry.typename,
+                        ads_entry.datatype_size,
+                        ads_entry.comment,
+                    ),
+                    parent,
+                )
             )

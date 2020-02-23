@@ -1,4 +1,4 @@
-# from lognplot.client import LognplotTcpClient
+from lognplot.client import LognplotTcpClient
 import pyads
 import time
 import ctypes
@@ -32,9 +32,7 @@ class AdsClient:
     def __init__(self, ams_net_id: str, ams_net_port: str, lnp=None):
         self.notification_handles = []
         self.plc = pyads.Connection(ams_net_id, ams_net_port)
-        # lnp_client = LognplotTcpClient(
-        #     hostname=args.lognplot_hostname, port=args.lognplot_port
-        # )
+        self.lnp_client = lnp
         self.plc.open()
 
     def __del__(self):
@@ -44,7 +42,8 @@ class AdsClient:
         self.plc.close()
 
     def subscribe_by_name(self, name: str, plc_type):
-        attr = pyads.NotificationAttrib(ctypes.sizeof(plc_type))
+        plc_type_mapped = self.DATATYPE_MAP[plc_type]
+        attr = pyads.NotificationAttrib(ctypes.sizeof(plc_type_mapped))
         handles = self.plc.add_device_notification(
             name, attr, self.callback(plc_type), pyads.ADSTRANS_SERVERCYCLE
         )
@@ -56,18 +55,17 @@ class AdsClient:
         for entry in parsed_entries:
             if re.match(pattern, entry.name) is not None:
                 if entry.typename in self.DATATYPE_MAP:
-                    self.subscribe_by_name(
-                        entry.name, self.DATATYPE_MAP[entry.typename]
-                    )
+                    self.subscribe_by_name(entry.name, entry.typename)
 
-    # def callback(self, plc_type):
-    #     @self.plc.notification(plc_type)
-    #     def decorated_callback(handle, name, timestamp, value):
-    #         self.lnp_client.send_sample(
-    #             name, AdsClient.format_timestamp(timestamp), float(value),
-    #         )
-    #
-    #     return decorated_callback
+    def callback(self, plc_type):
+        @self.plc.notification(plc_type)
+        def decorated_callback(handle, name, timestamp, value):
+            if self.lnp_client is not None:
+                self.lnp_client.send_sample(
+                    name, AdsClient.format_timestamp(timestamp), float(value),
+                )
+
+        return decorated_callback
 
     def get_ads_entries(self):
         upload_info = self._get_upload_info()

@@ -1,6 +1,7 @@
 class TreeItem(object):
     def __init__(self, data, parent=None):
         self.parentItem = parent
+        # TODO: make itemData a named tuple
         self.itemData = data
         self.childItems = []
 
@@ -19,7 +20,7 @@ class TreeItem(object):
     def column_count(self):
         return len(self.itemData)
 
-    def item_data(self):
+    def item_data(self):  # Todo: Give better name
         return self.itemData
 
     def data(self, column):
