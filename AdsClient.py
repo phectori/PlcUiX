@@ -45,7 +45,7 @@ class AdsClient:
         plc_type_mapped = self.DATATYPE_MAP[plc_type]
         attr = pyads.NotificationAttrib(ctypes.sizeof(plc_type_mapped))
         handles = self.plc.add_device_notification(
-            name, attr, self.callback(plc_type), pyads.ADSTRANS_SERVERCYCLE
+            name, attr, self.callback(plc_type_mapped), pyads.ADSTRANS_SERVERCYCLE
         )
         self.notification_handles.append(handles)
 

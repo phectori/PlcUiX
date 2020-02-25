@@ -32,16 +32,6 @@ if __name__ == "__main__":
     ads_client = AdsClient(args.ams_net_id, args.ams_net_port, lnp_client)
 
     entries = ads_client.get_ads_entries()
-    # entries.append(
-    #     AdsClient.VariableDescriptionEntry(
-    #         "TEST.Var.Input", "LREAL", "This is an input", 0, 8
-    #     )
-    # )
-    # entries.append(
-    #     AdsClient.VariableDescriptionEntry(
-    #         "TEST.Var.Output", "LREAL", "This is an output", 0, 8
-    #     )
-    # )
 
     app = QApplication(sys.argv)
 
@@ -54,6 +44,7 @@ if __name__ == "__main__":
     def on_clicked(index):
         name = index.internalPointer().item_data()[1]
         typ = index.internalPointer().item_data()[2]
+        print(name, typ)
         ads_client.subscribe_by_name(name, typ)
 
     view.doubleClicked.connect(on_clicked)
