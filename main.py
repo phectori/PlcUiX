@@ -1,7 +1,8 @@
 from lognplot.client import LognplotTcpClient
 from PyQt5.QtWidgets import QApplication, QTreeView
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSortFilterProxyModel
 from TreeModel import TreeModel
+from FilterModel import FilterModel
 from AdsClient import AdsClient
 import sys
 import argparse
@@ -25,9 +26,9 @@ if __name__ == "__main__":
             hostname=args.lognplot_hostname, port=args.lognplot_port
         )
         lnp_client.connect()
-    except ConnectionError:
+    except ConnectionError as e:
         lnp_client = None
-        print("Connection error")
+        print("Lognplot connection error", e)
 
     ads_client = AdsClient(args.ams_net_id, args.ams_net_port, lnp_client)
 
@@ -38,8 +39,12 @@ if __name__ == "__main__":
     model = TreeModel()
     model.populate(entries)
 
+    filterModel = FilterModel()
+    filterModel.setSourceModel(model)
+    # filterModel.setFilterWildcard("GVL*")
+
     view = QTreeView()
-    view.setModel(model)
+    view.setModel(filterModel)
 
     def on_clicked(index):
         name = index.internalPointer().item_data()[1]
@@ -49,6 +54,6 @@ if __name__ == "__main__":
 
     view.doubleClicked.connect(on_clicked)
 
-    view.setWindowTitle("PlcMagicUiX")
+    view.setWindowTitle("Plc UiX")
     view.show()
     sys.exit(app.exec_())
