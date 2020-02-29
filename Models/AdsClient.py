@@ -6,12 +6,16 @@ import struct
 import datetime
 import re
 from collections import namedtuple
-from typing import Type
+from typing import Type, List
 
 
 class AdsClient:
     VariableDescriptionEntry = namedtuple(
         "Entry", ["name", "typename", "comment", "datatype", "datatype_size"]
+    )
+
+    VariableDatatypeEntry = namedtuple(
+        "Type", ["name", "typename", "size", "comment", "sub_items"]
     )
 
     DATATYPE_MAP = {
@@ -50,6 +54,9 @@ class AdsClient:
             self.plc.close()
 
     def subscribe_by_name(self, name: str, plc_type):
+        if not plc_type in self.DATATYPE_MAP:
+            return
+
         plc_type_mapped = self.DATATYPE_MAP[plc_type]
         attr = pyads.NotificationAttrib(ctypes.sizeof(plc_type_mapped))
         handles = self.plc.add_device_notification(
@@ -76,23 +83,54 @@ class AdsClient:
         return decorated_callback
 
     def get_ads_entries(self):
-        upload_info = self._get_upload_info()
-        entries = self.plc.read(
-            pyads.constants.ADSIGRP_SYM_UPLOAD, 0, ctypes.c_ubyte * upload_info.nSymSize
+        # Get upload info
+        nSymbols, nSymSize, _, nDatatypeSize, _, _ = self.plc.read(
+            0xF00F, 0, ctypes.c_ulong * 6
         )
 
-        parsed_entries = AdsClient.unpack_entries(
-            bytes(entries), upload_info.nSymSize, upload_info.nSymbols
+        entries = self.plc.read(
+            pyads.constants.ADSIGRP_SYM_UPLOAD, 0, ctypes.c_ubyte * nSymSize
         )
+
+        parsed_entries = AdsClient.unpack_entries(bytes(entries), nSymSize, nSymbols)
+
+        data_types = self.plc.read(0xF00E, 0, ctypes.c_ubyte * nDatatypeSize)
+
+        data_type_entries = AdsClient.unpack_datatype_entries(
+            bytes(data_types), nDatatypeSize
+        )
+
+        sub_entries = []
+        for e in parsed_entries:
+            new_entries = AdsClient.get_sub_items(e, data_type_entries)
+            if len(new_entries) > 0:
+                sub_entries.extend(new_entries,)
+
+        parsed_entries.extend(sub_entries)
+
         return parsed_entries
 
-    def _get_upload_info(self):
-        upload_info = self.plc.read(
-            pyads.constants.ADSIGRP_SYM_UPLOADINFO,
-            0,
-            pyads.structs.SAdsSymbolUploadInfo,
-        )
-        return upload_info
+    @staticmethod
+    def get_sub_items(entry: VariableDescriptionEntry, data_type_entries):
+        new_entries = []
+        if entry is None:
+            return new_entries
+
+        if len(entry) <= 0:
+            return None
+
+        if entry.typename in data_type_entries:
+            typ = data_type_entries[entry.typename]
+            if len(typ.sub_items) > 0:
+                for s in typ.sub_items:
+                    e = AdsClient.VariableDescriptionEntry(
+                        entry.name + "." + s.name, s.typename, s.comment, -1, s.size
+                    )
+                    sub = AdsClient.get_sub_items(e, data_type_entries)
+                    new_entries.append(e)
+                    new_entries.extend(sub)
+
+        return new_entries
 
     @staticmethod
     def format_timestamp(timestamp: datetime):
@@ -102,15 +140,15 @@ class AdsClient:
     def unpack_entry(data: bytes, index: int) -> (int, VariableDescriptionEntry):
         fmt = "<6I3H"
         (
-            entry_length,
-            _,
-            _,
-            entry_datatype_size,
-            entry_datatype,
-            _,
-            name_len,
-            type_len,
-            comment_len,
+            entry_length,  # length of complete symbol entry
+            _,  # indexGroup of symbol: input, output etc.
+            _,  # index offset of symbol
+            entry_data_type_size,  # size of symbol (in bytes, 0 = bit)
+            entry_data_type,  # adsDataType of symbol
+            _,  # flags
+            name_len,  # length of symbol name (excl. \0)
+            type_len,  # length of type name (excl. \0)
+            comment_len,  # length of of comment (excl. \0)
         ) = struct.unpack_from(fmt, data, index)
 
         name_offset = index + struct.calcsize(fmt)
@@ -125,12 +163,14 @@ class AdsClient:
         return (
             entry_length,
             AdsClient.VariableDescriptionEntry(
-                name, typ, comment, entry_datatype, entry_datatype_size
+                name, typ, comment, entry_data_type, entry_data_type_size
             ),
         )
 
     @staticmethod
-    def unpack_entries(entries_data: bytes, size: int, count: int):
+    def unpack_entries(
+        entries_data: bytes, size: int, count: int
+    ) -> List[VariableDescriptionEntry]:
         parsed_entries = []
         index = 0
         while index < size:
@@ -139,5 +179,65 @@ class AdsClient:
             parsed_entries.append(entry)
 
         assert len(parsed_entries) == count
+        assert index == size
+        return parsed_entries
+
+    @staticmethod
+    def unpack_datatype_entry(data: bytes, index: int) -> (int, VariableDatatypeEntry):
+        fmt = "<8I5H"
+        (
+            entry_length,  # length of complete data type entry
+            _,  # version of the data type structure
+            _,  # hash value of data type to compare data types
+            _,  # hash value of base type
+            size,  # size of data type (in bytes)
+            _,  # offs of data item in parent data type
+            _,  # ads data type of symbol (if alias)
+            _,  # flags
+            name_len,  # length of data item  name (excl. \0)
+            type_len,  # length of data item type name (excl. \0)
+            comment_len,  # length of comment (excl. \0)
+            array_dim,  #
+            sub_items_count,  #
+        ) = struct.unpack_from(fmt, data, index)
+
+        name_offset = index + struct.calcsize(fmt)
+        name = data[name_offset : name_offset + name_len].decode("ascii")
+
+        type_offset = name_offset + name_len + 1
+        typ = data[type_offset : type_offset + type_len].decode("ascii")
+
+        comment_offset = type_offset + type_len + 1
+        comment = data[comment_offset : comment_offset + comment_len].decode("ascii")
+
+        fmt = "<" + str(array_dim) + "L"
+        dim_offset = comment_offset + comment_len + 1
+        dim = struct.unpack_from(fmt, data, dim_offset)
+
+        sub_items_offset = dim_offset + struct.calcsize(fmt)
+        sub_index = 0
+        sub_items = []
+        while sub_index < sub_items_count:
+            sub_entry_size, sub_item = AdsClient.unpack_datatype_entry(
+                data, sub_items_offset
+            )
+            sub_items_offset += sub_entry_size
+            sub_index += 1
+            sub_items.append(sub_item)
+
+        return (
+            entry_length,
+            AdsClient.VariableDatatypeEntry(name, typ, size, comment, sub_items),
+        )
+
+    @staticmethod
+    def unpack_datatype_entries(entries_data: bytes, size: int):
+        parsed_entries = dict()
+        index = 0
+        while index < size:
+            entry_size, entry = AdsClient.unpack_datatype_entry(entries_data, index)
+            index += entry_size
+            parsed_entries[entry.name] = entry
+
         assert index == size
         return parsed_entries
