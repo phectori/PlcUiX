@@ -17,6 +17,9 @@ def parse_arguments():
         "--ams-net-id", help="ams net id", default="127.0.0.1.1.1", type=str
     )
     parser.add_argument("--ams-net-port", help="ams net port", default=851, type=int)
+    parser.add_argument(
+        "--plc-hostname", help="ip address of the plc", default=None, type=str
+    )
     parser.add_argument("--lognplot-hostname", default="localhost", type=str)
     parser.add_argument("--lognplot-port", default="12345", type=int)
 
@@ -43,7 +46,9 @@ if __name__ == "__main__":
     engine = QQmlApplicationEngine()
 
     # Set a root context
-    ads_client = AdsClient(args.ams_net_id, args.ams_net_port, lnp_client)
+    ads_client = AdsClient(
+        args.ams_net_id, args.ams_net_port, lnp_client, args.plc_hostname
+    )
     vm = ViewModel(ads_client)
     engine.rootContext().setContextProperty("vm", vm)
 

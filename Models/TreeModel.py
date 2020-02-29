@@ -9,11 +9,12 @@ class TreeModel(QAbstractItemModel):
     TypeRole = Qt.UserRole + 2
     SizeRole = Qt.UserRole + 3
     CommentRole = Qt.UserRole + 4
+    ValueRole = Qt.UserRole + 5
 
     def __init__(self, parent=None):
         super(TreeModel, self).__init__(parent)
 
-        self.rootItem = TreeItem(("Name", "Path", "Type", "Size", "Comment"))
+        self.rootItem = TreeItem(("Name", "Path", "Type", "Size", "Comment", "Value"))
 
     def columnCount(self, parent=None, *args, **kwargs):
         if parent.isValid():
@@ -21,7 +22,7 @@ class TreeModel(QAbstractItemModel):
         else:
             return self.rootItem.column_count()
 
-    def data(self, index, role=None):
+    def data(self, index: QModelIndex, role=None):
         if not index.isValid():
             return None
 
@@ -34,7 +35,7 @@ class TreeModel(QAbstractItemModel):
 
         return item.data(index.column())
 
-    def flags(self, index):
+    def flags(self, index: QModelIndex):
         if not index.isValid():
             return Qt.NoItemFlags
 
@@ -61,7 +62,7 @@ class TreeModel(QAbstractItemModel):
         else:
             return QModelIndex()
 
-    def parent(self, index):
+    def parent(self, index: QModelIndex):
         if not index.isValid():
             return QModelIndex()
 
@@ -91,6 +92,7 @@ class TreeModel(QAbstractItemModel):
             self.TypeRole: b"type",
             self.SizeRole: b"size",
             self.CommentRole: b"comment",
+            self.ValueRole: b"value",
         }
 
     def populate(self, entries):
@@ -116,7 +118,7 @@ class TreeModel(QAbstractItemModel):
             )
 
             if len(filtered) == 0:
-                node = TreeItem((items[0], items[0], "", "", "", ""), parent)
+                node = TreeItem((items[0], items[0], "", "", "", "", ""), parent)
                 parent.append_child(node)
             else:
                 node = filtered[0]
@@ -132,6 +134,7 @@ class TreeModel(QAbstractItemModel):
                         ads_entry.typename,
                         ads_entry.datatype_size,
                         ads_entry.comment,
+                        "",
                     ),
                     parent,
                 )

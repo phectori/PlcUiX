@@ -36,11 +36,6 @@ Window {
                 width: 200
             }
             TableViewColumn {
-                title: "Path"
-                role: "path"
-                width: 200
-            }
-            TableViewColumn {
                 title: "Type"
                 role: "type"
                 width: 100
@@ -49,6 +44,11 @@ Window {
                 title: "Size"
                 role: "size"
                 width: 100
+            }
+            TableViewColumn {
+                title: "Value"
+                role: "value"
+                width: 50
             }
             TableViewColumn {
                 title: "Comment"

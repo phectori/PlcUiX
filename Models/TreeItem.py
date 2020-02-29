@@ -48,4 +48,3 @@ class TreeItem(object):
 
         match = re.match(self.data(1))
         return match.hasMatch()
-
