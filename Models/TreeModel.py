@@ -116,7 +116,7 @@ class TreeModel(QAbstractItemModel):
             )
 
             if len(filtered) == 0:
-                node = TreeItem((items[0], "", "", "", "", ""), parent)
+                node = TreeItem((items[0], items[0], "", "", "", ""), parent)
                 parent.append_child(node)
             else:
                 node = filtered[0]

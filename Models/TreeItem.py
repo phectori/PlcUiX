@@ -37,3 +37,15 @@ class TreeItem(object):
             return self.parentItem.childItems.index(self)
 
         return 0
+
+    def filter(self, re):
+        if not re.isValid():
+            return True
+
+        for c in self.childItems:
+            if c.filter(re):
+                return True
+
+        match = re.match(self.data(1))
+        return match.hasMatch()
+

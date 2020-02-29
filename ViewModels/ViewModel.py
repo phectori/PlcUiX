@@ -23,12 +23,12 @@ class ViewModel(QObject):
         if len(self.entries) == 0:
             self.entries.append(
                 AdsClient.VariableDescriptionEntry(
-                    "TESTING.test", "BOOL", "This is a comment", 1, 1
+                    "Alpha.alpha", "BOOL", "This is a comment", 1, 1
                 )
             )
             self.entries.append(
                 AdsClient.VariableDescriptionEntry(
-                    "TESTING.test1", "BOOL", "This is also a comment", 1, 1
+                    "Alpha.beta", "BOOL", "This is also a comment", 1, 1
                 )
             )
 

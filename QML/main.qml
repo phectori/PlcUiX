@@ -24,7 +24,7 @@ Window {
             Layout.fillWidth: true
             Layout.margins: 5
             placeholderText: qsTr("Enter filter")
-            onTextChanged: vm.model.setFilterRegExp(text)
+            onTextChanged: vm.model.setFilterRegularExpression(text)
         }
 
         TreeView {
@@ -33,7 +33,12 @@ Window {
             TableViewColumn {
                 title: "Name"
                 role: "name"
-                width: 300
+                width: 200
+            }
+            TableViewColumn {
+                title: "Path"
+                role: "path"
+                width: 200
             }
             TableViewColumn {
                 title: "Type"
@@ -48,7 +53,6 @@ Window {
             TableViewColumn {
                 title: "Comment"
                 role: "comment"
-                width: 200
             }
             model: vm.model
             Layout.fillHeight: true
