@@ -29,18 +29,23 @@ class AdsClient:
         "WORD": pyads.PLCTYPE_WORD,
     }  # type: Dict[str, Type]
 
-    def __init__(self, ams_net_id: str, ams_net_port: str, plc_ip_address=None, lnp=None):
+    def __init__(self, ams_net_id: str, ams_net_port: str, lnp=None, plc_ip_address=None):
         self.notification_handles = []
-
-        self.plc = pyads.Connection(ams_net_id, ams_net_port, plc_ip_address)
         self.lnp_client = lnp
-        self.plc.open()
+
+        try:
+            print("Connecting to plc...")
+            self.plc = pyads.Connection(ams_net_id, ams_net_port, plc_ip_address)
+            self.plc.open()
+        except pyads.ADSError as e:
+            print("Ads Error: ", e)
 
     def __del__(self):
         for handle in self.notification_handles:
             self.plc.del_device_notification(*handle)
 
-        self.plc.close()
+        if self.plc is not None:
+            self.plc.close()
 
     def subscribe_by_name(self, name: str, plc_type):
         plc_type_mapped = self.DATATYPE_MAP[plc_type]

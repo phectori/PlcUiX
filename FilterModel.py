@@ -7,8 +7,8 @@ class FilterModel(QSortFilterProxyModel):
 
     def filterAcceptsRow(self, sourceRow, sourceParent):
 
-        index = self.sourceModel().index(sourceRow, 1, sourceParent)
-        print(self.sourceModel().data(index, Qt.DisplayRole))
+        # index = self.sourceModel().index(sourceRow, 1, sourceParent)
+        # print(self.sourceModel().data(index, Qt.DisplayRole))
         # rowCount = self.sourceModel().rowCount(index)
         # return QSortFilterProxyModel.filterAcceptsRow(self, sourceRow, sourceParent)
         return True

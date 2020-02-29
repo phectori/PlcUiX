@@ -1,13 +1,14 @@
 from lognplot.client import LognplotTcpClient
-from PyQt5.QtWidgets import QApplication, QTreeView
-from PyQt5.QtCore import Qt, QSortFilterProxyModel
-from TreeModel import TreeModel
-from FilterModel import FilterModel
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtQml import QQmlApplicationEngine
+from ViewModel import ViewModel
 from AdsClient import AdsClient
 import sys
 import argparse
 
-if __name__ == "__main__":
+
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -19,41 +20,40 @@ if __name__ == "__main__":
     parser.add_argument("--lognplot-hostname", default="localhost", type=str)
     parser.add_argument("--lognplot-port", default="12345", type=int)
 
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+if __name__ == "__main__":
+    args = parse_arguments()
 
     try:
         lnp_client = LognplotTcpClient(
             hostname=args.lognplot_hostname, port=args.lognplot_port
         )
+        print("Connecting to lognplot...")
         lnp_client.connect()
-    except ConnectionError as e:
+        print("Connected to lognplot")
+    except ConnectionError as err:
         lnp_client = None
-        print("Lognplot connection error", e)
+        print("Error while connecting to lognplot: ", err)
 
-    ads_client = AdsClient(args.ams_net_id, args.ams_net_port, lnp_client)
-
-    entries = ads_client.get_ads_entries()
-
+    # Create application
     app = QApplication(sys.argv)
 
-    model = TreeModel()
-    model.populate(entries)
+    # Create a QML engine.
+    engine = QQmlApplicationEngine()
 
-    filterModel = FilterModel()
-    filterModel.setSourceModel(model)
-    # filterModel.setFilterWildcard("GVL*")
+    # Set a root context
+    ads_client = AdsClient(args.ams_net_id, args.ams_net_port, lnp_client)
+    vm = ViewModel(ads_client)
+    engine.rootContext().setContextProperty("vm", vm)
 
-    view = QTreeView()
-    view.setModel(filterModel)
+    # Create a component factory and load the QML script.
+    engine.load(QUrl('main.qml'))
 
-    def on_clicked(index):
-        name = index.internalPointer().item_data()[1]
-        typ = index.internalPointer().item_data()[2]
-        print(name, typ)
-        ads_client.subscribe_by_name(name, typ)
+    # Qml file error handling
+    if not engine.rootObjects():
+        print("Failed to find root object in QML")
+        sys.exit(-1)
 
-    view.doubleClicked.connect(on_clicked)
-
-    view.setWindowTitle("Plc UiX")
-    view.show()
     sys.exit(app.exec_())

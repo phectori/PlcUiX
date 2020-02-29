@@ -4,6 +4,12 @@ from AdsClient import AdsClient
 
 
 class TreeModel(QAbstractItemModel):
+    NameRole = Qt.UserRole + 0
+    PathRole = Qt.UserRole + 1
+    TypeRole = Qt.UserRole + 2
+    SizeRole = Qt.UserRole + 3
+    CommentRole = Qt.UserRole + 4
+
     def __init__(self, parent=None):
         super(TreeModel, self).__init__(parent)
 
@@ -19,10 +25,12 @@ class TreeModel(QAbstractItemModel):
         if not index.isValid():
             return None
 
+        item = index.internalPointer()
+        if role >= Qt.UserRole:
+            return item.data(role - Qt.UserRole)
+
         if role != Qt.DisplayRole:
             return None
-
-        item = index.internalPointer()
 
         return item.data(index.column())
 
@@ -75,6 +83,15 @@ class TreeModel(QAbstractItemModel):
             parent_item = parent.internalPointer()
 
         return parent_item.child_count()
+
+    def roleNames(self):
+        return {
+            self.NameRole: b'name',
+            self.PathRole: b'path',
+            self.TypeRole: b'type',
+            self.SizeRole: b'size',
+            self.CommentRole: b'comment',
+        }
 
     def populate(self, entries):
         for e in entries:
