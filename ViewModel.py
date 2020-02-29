@@ -43,9 +43,8 @@ class ViewModel(QObject):
     def model(self):
         return self.filter_model
 
-    @pyqtSlot()
-    def on_clicked(index):
-        name = index.internalPointer().item_data()[1]
-        typ = index.internalPointer().item_data()[2]
-        print(name, typ)
-        #ads_client.subscribe_by_name(name, typ)
+    @pyqtSlot("QModelIndex")
+    def on_double_clicked(self, index):
+        name = index.data(TreeModel.PathRole)
+        typ = index.data(TreeModel.TypeRole)
+        self.ads_client.subscribe_by_name(name, typ)

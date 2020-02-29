@@ -9,7 +9,12 @@ Window {
     width: 800
     height: 600
 
+    Component.onCompleted: {
+        adsEntriesTreeView.doubleClicked.connect(vm.on_double_clicked)
+    }
+
     TreeView {
+        id: adsEntriesTreeView
         TableViewColumn {
             title: "Name"
             role: "name"
