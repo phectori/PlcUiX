@@ -1,6 +1,6 @@
 from PyQt5.QtCore import QAbstractItemModel, QModelIndex, Qt
-from TreeItem import TreeItem
-from AdsClient import AdsClient
+from Models.TreeItem import TreeItem
+from Models.AdsClient import AdsClient
 
 
 class TreeModel(QAbstractItemModel):
@@ -86,11 +86,11 @@ class TreeModel(QAbstractItemModel):
 
     def roleNames(self):
         return {
-            self.NameRole: b'name',
-            self.PathRole: b'path',
-            self.TypeRole: b'type',
-            self.SizeRole: b'size',
-            self.CommentRole: b'comment',
+            self.NameRole: b"name",
+            self.PathRole: b"path",
+            self.TypeRole: b"type",
+            self.SizeRole: b"size",
+            self.CommentRole: b"comment",
         }
 
     def populate(self, entries):

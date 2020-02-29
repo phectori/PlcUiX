@@ -29,7 +29,9 @@ class AdsClient:
         "WORD": pyads.PLCTYPE_WORD,
     }  # type: Dict[str, Type]
 
-    def __init__(self, ams_net_id: str, ams_net_port: str, lnp=None, plc_ip_address=None):
+    def __init__(
+        self, ams_net_id: str, ams_net_port: str, lnp=None, plc_ip_address=None
+    ):
         self.notification_handles = []
         self.lnp_client = lnp
 

@@ -2,8 +2,8 @@ from lognplot.client import LognplotTcpClient
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQml import QQmlApplicationEngine
-from ViewModel import ViewModel
-from AdsClient import AdsClient
+from ViewModels.ViewModel import ViewModel
+from Models.AdsClient import AdsClient
 import sys
 import argparse
 
@@ -48,11 +48,13 @@ if __name__ == "__main__":
     engine.rootContext().setContextProperty("vm", vm)
 
     # Create a component factory and load the QML script.
-    engine.load(QUrl('main.qml'))
+    engine.load(QUrl("QML/main.qml"))
 
     # Qml file error handling
     if not engine.rootObjects():
         print("Failed to find root object in QML")
         sys.exit(-1)
+
+    engine.quit.connect(app.quit)
 
     sys.exit(app.exec_())
