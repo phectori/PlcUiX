@@ -18,14 +18,15 @@ class ViewModel(QObject):
 
         # ads_client = AdsClient(args.ams_net_id, args.ams_net_port, lnp_client)
         self.ads_client = ads_client
-        self.ads_client.get_ads_entries()
+        self.entries = self.ads_client.get_ads_entries()
 
-        self.entries.append(AdsClient.VariableDescriptionEntry(
-            "GVL.test", "BOOL", "This is a comment", 1, 1
-        ))
-        self.entries.append(AdsClient.VariableDescriptionEntry(
-            "GVL.test1", "BOOL", "This is also a comment", 1, 1
-        ))
+        if len(self.entries) == 0:
+            self.entries.append(AdsClient.VariableDescriptionEntry(
+                "TESTING.test", "BOOL", "This is a comment", 1, 1
+            ))
+            self.entries.append(AdsClient.VariableDescriptionEntry(
+                "TESTING.test1", "BOOL", "This is also a comment", 1, 1
+            ))
 
         self.tree_model = TreeModel()
         self.tree_model.populate(self.entries)

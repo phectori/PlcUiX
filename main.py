@@ -32,7 +32,6 @@ if __name__ == "__main__":
         )
         print("Connecting to lognplot...")
         lnp_client.connect()
-        print("Connected to lognplot")
     except ConnectionError as err:
         lnp_client = None
         print("Error while connecting to lognplot: ", err)
