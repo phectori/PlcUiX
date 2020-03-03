@@ -1,4 +1,3 @@
-from lognplot.client import LognplotTcpClient
 import pyads
 import time
 import ctypes
@@ -34,10 +33,10 @@ class AdsClient:
     }  # type: Dict[str, Type]
 
     def __init__(
-        self, ams_net_id: str, ams_net_port: str, lnp=None, plc_ip_address=None
+        self, ams_net_id: str, ams_net_port: str, plc_ip_address=None, callback=None
     ):
         self.notification_handles = []
-        self.lnp_client = lnp
+        self.cb = callback
 
         try:
             print("Connecting to plc...")
@@ -53,16 +52,22 @@ class AdsClient:
         if self.plc is not None:
             self.plc.close()
 
-    def subscribe_by_name(self, name: str, plc_type):
-        if not plc_type in self.DATATYPE_MAP:
+    def subscribe_by_name(self, name: str, plc_type, callbacks):
+        if plc_type not in self.DATATYPE_MAP:
             return
 
         plc_type_mapped = self.DATATYPE_MAP[plc_type]
         attr = pyads.NotificationAttrib(ctypes.sizeof(plc_type_mapped))
-        handles = self.plc.add_device_notification(
-            name, attr, self.callback(plc_type_mapped), pyads.ADSTRANS_SERVERCYCLE
-        )
-        self.notification_handles.append(handles)
+        try:
+            handles = self.plc.add_device_notification(
+                name,
+                attr,
+                self.callback(plc_type_mapped, callbacks),
+                pyads.ADSTRANS_SERVERCYCLE,
+            )
+            self.notification_handles.append(handles)
+        except pyads.ADSError as e:
+            print("Error while subscribing to: ", name, " ", e)
 
     def subscribe(self, pattern: str):
         parsed_entries = self.get_ads_entries()
@@ -72,13 +77,14 @@ class AdsClient:
                 if entry.typename in self.DATATYPE_MAP:
                     self.subscribe_by_name(entry.name, entry.typename)
 
-    def callback(self, plc_type):
+    def callback(self, plc_type, callbacks=[]):
+        if self.cb is not None:
+            callbacks.append(self.cb)
+
         @self.plc.notification(plc_type)
         def decorated_callback(handle, name, timestamp, value):
-            if self.lnp_client is not None:
-                self.lnp_client.send_sample(
-                    name, AdsClient.format_timestamp(timestamp), float(value),
-                )
+            for cb in callbacks:
+                cb(name, AdsClient.format_timestamp(timestamp), float(value))
 
         return decorated_callback
 
@@ -119,6 +125,7 @@ class AdsClient:
         if len(entry) <= 0:
             return None
 
+        # TODO: clean this up
         if entry.typename in data_type_entries:
             typ = data_type_entries[entry.typename]
             if len(typ.sub_items) > 0:

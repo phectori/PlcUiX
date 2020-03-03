@@ -20,6 +20,7 @@ class ViewModel(QObject):
         self.ads_client = ads_client
         self.entries = self.ads_client.get_ads_entries()
 
+        # Append some test entries when no no entries are received
         if len(self.entries) == 0:
             self.entries.append(
                 AdsClient.VariableDescriptionEntry(
@@ -51,4 +52,9 @@ class ViewModel(QObject):
     def on_double_clicked(self, index):
         name = index.data(TreeModel.PathRole)
         typ = index.data(TreeModel.TypeRole)
-        self.ads_client.subscribe_by_name(name, typ)
+
+        def cb(name, timestamp, value):
+            # TODO: Latest timestamp can also be displayed
+            index.model().setData(index, value, TreeModel.ValueRole)
+
+        self.ads_client.subscribe_by_name(name, typ, [])

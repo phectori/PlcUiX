@@ -29,6 +29,12 @@ class TreeItem(object):
         except IndexError:
             return None
 
+    def set_data(self, column, value):
+        try:
+            self.itemData[column] = value
+        except IndexError:
+            return
+
     def parent(self):
         return self.parentItem
 

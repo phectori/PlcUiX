@@ -14,7 +14,7 @@ class TreeModel(QAbstractItemModel):
     def __init__(self, parent=None):
         super(TreeModel, self).__init__(parent)
 
-        self.rootItem = TreeItem(("Name", "Path", "Type", "Size", "Comment", "Value"))
+        self.rootItem = TreeItem(["Name", "Path", "Type", "Size", "Comment", "Value"])
 
     def columnCount(self, parent=None, *args, **kwargs):
         if parent.isValid():
@@ -34,6 +34,15 @@ class TreeModel(QAbstractItemModel):
             return None
 
         return item.data(index.column())
+
+    def setData(self, index, value, role=None):
+        if role == TreeModel.ValueRole:
+            item = index.internalPointer()
+            item.set_data(role - Qt.UserRole, value)
+            self.dataChanged.emit(index, index, [role])
+            return True
+
+        return False
 
     def flags(self, index: QModelIndex):
         if not index.isValid():
@@ -118,7 +127,7 @@ class TreeModel(QAbstractItemModel):
             )
 
             if len(filtered) == 0:
-                node = TreeItem((items[0], items[0], "", "", "", "", ""), parent)
+                node = TreeItem([items[0], items[0], "", "", "", "", ""], parent)
                 parent.append_child(node)
             else:
                 node = filtered[0]
@@ -128,14 +137,14 @@ class TreeModel(QAbstractItemModel):
             name = items[0]
             parent.append_child(
                 TreeItem(
-                    (
+                    [
                         name,
                         ads_entry.name,
                         ads_entry.typename,
                         ads_entry.datatype_size,
                         ads_entry.comment,
                         "",
-                    ),
+                    ],
                     parent,
                 )
             )

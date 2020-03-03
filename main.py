@@ -1,5 +1,5 @@
 from lognplot.client import LognplotTcpClient
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, QThread
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtQml import QQmlApplicationEngine
 from ViewModels.ViewModel import ViewModel
@@ -26,18 +26,25 @@ def parse_arguments():
     return parser.parse_args()
 
 
+def init_lognplot(hostname, port):
+    client = None
+    try:
+        client = LognplotTcpClient(hostname=hostname, port=port)
+        print("Connecting to lognplot...")
+        client.connect()
+    except ConnectionError as err:
+        print("Error while connecting to lognplot: ", err)
+    except TimeoutError as err:
+        print("Error while connecting to lognplot: ", err)
+
+    return client
+
+
 if __name__ == "__main__":
     args = parse_arguments()
 
-    try:
-        lnp_client = LognplotTcpClient(
-            hostname=args.lognplot_hostname, port=args.lognplot_port
-        )
-        print("Connecting to lognplot...")
-        lnp_client.connect()
-    except ConnectionError as err:
-        lnp_client = None
-        print("Error while connecting to lognplot: ", err)
+    # Create lognplot client
+    lnp_client = init_lognplot(args.lognplot_hostname, args.lognplot_port)
 
     # Create application
     app = QApplication(sys.argv)
@@ -46,8 +53,9 @@ if __name__ == "__main__":
     engine = QQmlApplicationEngine()
 
     # Set a root context
+    # https://codereview.stackexchange.com/questions/138992/simple-pyqt5-counting-gui
     ads_client = AdsClient(
-        args.ams_net_id, args.ams_net_port, lnp_client, args.plc_hostname
+        args.ams_net_id, args.ams_net_port, args.plc_hostname, lnp_client.send_sample
     )
     vm = ViewModel(ads_client)
     engine.rootContext().setContextProperty("vm", vm)
